@@ -10,6 +10,46 @@
       .then(data => rushingData.set(data))
       .catch(e => [])
   })
+
+  function descendingByField(field) {
+    return function compare(a, b) {
+      let intA = parseFloat(a[field])
+      let intB = parseFloat(b[field])
+      if(intA > intB) return -1;
+      if(intA < intB) return 1;
+      return 0;
+    }
+  }
+
+  function sort(node, field) {
+    const setSortField = function(e) {
+      sortField = field
+      document
+        .querySelectorAll(".sorted")
+        .forEach(n => n.classList.remove("sorted"))
+      node.classList.add("sorted")
+    }
+
+    node.classList.add("sortable")
+    node.addEventListener("click", setSortField, true);
+
+    return {
+      destroy() {
+        node.removeEventListener("click", setSortField, true);
+      }
+    }
+  }
+
+  let sortField = ""
+
+  function resetSortField() {
+    sortField = ""
+    document.querySelectorAll(".sortable").forEach(n => n.classList.remove("sorted"))
+  }
+
+  $: sortedData =
+    [...$rushingData]
+      .sort(descendingByField(sortField))
 </script>
 
 <style>
@@ -33,11 +73,40 @@
   th, td {
     padding: 4px 10px 4px 10px;
   }
+
+  :global(.sortable):hover {
+    cursor: pointer;
+    color: red;
+  }
+
+  :global(.sortable) {
+    background: url('/img/sort_both.png') no-repeat;
+    background-position: right;
+    padding-right: 20px;
+  }
+
+  :global(.sortable.sorted) {
+    background: url('/img/sort_desc.png') no-repeat;
+    background-position: right;
+    padding-right: 20px;
+  }
+
+  header {
+    margin-bottom: 20px;
+  }
 </style>
 
 <h1>
   NFL Rushing Statistics
 </h1>
+
+<header>
+  <div>
+    {#if sortField}
+      <button on:click={resetSortField}>Clear Sort</button>
+    {/if}
+  </div>
+</header>
 
 <table>
   <thead>
@@ -49,9 +118,9 @@
       <th>Att/G</th>
       <th>Yds</th>
       <th>Avg</th>
-      <th>Yds/G</th>
-      <th>TD</th>
-      <th>Lng</th>
+      <th use:sort={"Yds/G"}>Yds/G</th>
+      <th use:sort={"TD"}>TD</th>
+      <th use:sort={"Lng"}>Lng</th>
       <th>1st</th>
       <th>1st%</th>
       <th>20+</th>
@@ -60,7 +129,7 @@
     </tr>
   </thead>
   <tbody>
-    {#each $rushingData as data (data.Player)}
+    {#each sortedData as data (data.Player)}
       <tr>
         <td>{data["Player"]}</td>
         <td>{data["Team"]}</td>
