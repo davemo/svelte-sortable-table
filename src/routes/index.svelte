@@ -41,14 +41,26 @@
   }
 
   let sortField = ""
+  let query = ""
 
   function resetSortField() {
     sortField = ""
     document.querySelectorAll(".sortable").forEach(n => n.classList.remove("sorted"))
   }
 
-  $: sortedData =
+  function resetQuery() {
+    query = ""
+  }
+
+  function normalizedPlayerNameFor(userQuery) {
+    return function(data) {
+      return data.Player.toLowerCase().indexOf(userQuery.toLowerCase()) !== -1
+    }
+  }
+
+  $: filteredSortedData =
     [...$rushingData]
+      .filter(normalizedPlayerNameFor(query))
       .sort(descendingByField(sortField))
 </script>
 
@@ -102,6 +114,11 @@
 
 <header>
   <div>
+    Filter: <input bind:value={query} placeholder="Enter player name...">
+    {#if query}
+      <button on:click={resetQuery}>Clear Filter</button>
+    {/if}
+
     {#if sortField}
       <button on:click={resetSortField}>Clear Sort</button>
     {/if}
@@ -129,7 +146,7 @@
     </tr>
   </thead>
   <tbody>
-    {#each sortedData as data (data.Player)}
+    {#each filteredSortedData as data (data.Player)}
       <tr>
         <td>{data["Player"]}</td>
         <td>{data["Team"]}</td>
