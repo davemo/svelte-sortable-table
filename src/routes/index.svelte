@@ -1,6 +1,7 @@
 <script>
   import { onMount } from 'svelte'
   import { writable } from 'svelte/store'
+  import { downloadCSV } from '$lib/download-csv.js'
 
   let rushingData = writable([])
 
@@ -10,6 +11,12 @@
       .then(data => rushingData.set(data))
       .catch(e => [])
   })
+
+  function doExportOf(data) {
+    return function(e) {
+      downloadCSV(data, document.querySelector('#exportAnchor'))
+    }
+  }
 
   function descendingByField(field) {
     return function compare(a, b) {
@@ -119,6 +126,8 @@
       <button on:click={resetQuery}>Clear Filter</button>
     {/if}
 
+    <button on:click={doExportOf(filteredSortedData)}>Export to CSV</button>
+
     {#if sortField}
       <button on:click={resetSortField}>Clear Sort</button>
     {/if}
@@ -167,3 +176,5 @@
     {/each}
   </tbody>
 </table>
+
+<a id="exportAnchor" style="display: none"></a>
