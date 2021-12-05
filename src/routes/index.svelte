@@ -3,8 +3,23 @@
   import { writable } from 'svelte/store'
   import { downloadCSV } from '$lib/download-csv.js'
 
+
+  /*
+    Svelte stores provide subscription behaviour
+    to allow templates to automatically re-render.
+
+    - https://svelte.dev/docs#svelte_store
+  */
   let rushingData = writable([])
 
+  /*
+    Runs once the component is mounted in the DOM.
+
+    Similar to React's componentDidMount and/or
+    immediate async hook invocation.
+
+    - https://svelte.dev/docs#onMount
+  */
   onMount(async () => {
     fetch("/rushing.json")
       .then(res => res.json())
@@ -12,12 +27,20 @@
       .catch(e => [])
   })
 
+  /*
+    UI event handler to trigger the export
+    from lib/download-csv.js
+  */
   function doExportOf(data) {
     return function(e) {
       downloadCSV(data, document.querySelector('#exportAnchor'))
     }
   }
 
+  /*
+    A curried function bound to sort descending by
+    the specified field.
+  */
   function descendingByField(field) {
     return function compare(a, b) {
       let intA = parseFloat(a[field])
@@ -28,6 +51,19 @@
     }
   }
 
+  /*
+    A svelte action, which is a type of element directive.
+
+    Responsible for attaching event handlers, modifying DOM elements,
+    and providing a destroy method to unbind and cleanup.
+
+    This is very similar to the AngularJS concept of a directive and
+    allows developers to create custom DSLs using HTML attributes.
+
+    ie: <th use:sort={field}>
+
+    - https://svelte.dev/docs#use_action
+  */
   function sort(node, field) {
     const setSortField = function(e) {
       sortField = field
@@ -47,24 +83,50 @@
     }
   }
 
+  // The value to sort by.
   let sortField = ""
+
+  // The value to filter by.
   let query = ""
 
+  // Resets the data and UI state for sorting.
   function resetSortField() {
     sortField = ""
     document.querySelectorAll(".sortable").forEach(n => n.classList.remove("sorted"))
   }
 
+  // Resets the data state for filtering.
   function resetQuery() {
     query = ""
   }
 
+  /*
+    The Player Name data in rushing.json is not normalized.
+    This accounts for users typing queries that might
+    not match the casing stored in the file.
+  */
   function normalizedPlayerNameFor(userQuery) {
     return function(data) {
       return data.Player.toLowerCase().indexOf(userQuery.toLowerCase()) !== -1
     }
   }
 
+  /*
+    A reactive statement.
+
+    Svelte uses this valid JavaScript syntax (the label* construct)
+    within its compiler to setup and track dependencies and changes
+    for the expression listed.
+
+    Conceptually, any time our query or sortField change, Svelte
+    will re-evaluate this expression to keep it up to date.
+
+    The UI can then bind to filteredSortedData below and be guaranteed
+    to be kept up to date as things change.
+
+    - https://svelte.dev/docs#3_$_marks_a_statement_as_reactive
+    * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/label
+  */
   $: filteredSortedData =
     [...$rushingData]
       .filter(normalizedPlayerNameFor(query))
@@ -72,6 +134,15 @@
 </script>
 
 <style>
+  /*
+    Svelte scopes styles to any given component automatically
+    to avoid bleed and insulate from the cascade.
+
+    This gives svelte components much better encapsulation and
+    they become more resilient to styling changes.
+
+    - https://svelte.dev/docs#style
+  */
   table {
     margin-bottom: 2em;
     width: 100%;
